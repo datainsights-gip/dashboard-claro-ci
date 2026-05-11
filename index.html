@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Insights | Dashboard Claro CI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+:root {
+  --red:#E8002A; --red-dark:#A80020; --green:#00875A; --amber:#FF991F; --blue:#0052CC;
+  --bg-main:#F4F5F7; --bg-card:#FFFFFF; --text-main:#0F1117; --text-sec:#4B5563;
+  --border:#E5E7EB; --g100:#F4F5F7; --g200:#E5E7EB; --g300:#D1D5DB; --g700:#374151; --g900:#0F1117;
+  --red-muted:#FFF0F2; --greenl:#E3FCEF; --amberl:#FFF7E6; --bluel:#DEEBFF;
+  --shadow:0 1px 4px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.03);
+  --radius:12px;
+}
+body.dark-mode {
+  --bg-main:#0a0a0a; --bg-card:#171717; --text-main:#f5f5f5; --text-sec:#a3a3a3;
+  --border:#262626; --g100:#1e1e1e; --g200:#262626; --g300:#404040; --g700:#a3a3a3; --g900:#f5f5f5;
+  --red-muted:rgba(232,0,42,0.1); --greenl:rgba(0,135,90,0.1); --amberl:rgba(255,153,31,0.1); --bluel:rgba(0,82,204,0.1);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--bg-main);color:var(--text-main);min-height:100vh;transition:0.3s;}
+
+/* Header Premium */
+header{
+  background:var(--bg-card);padding:0 40px;height:80px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border);transition:0.3s;
+}
+.logo-group{display:flex;align-items:center;gap:24px;}
+.header-right{display:flex;align-items:center;gap:12px;}
+
+/* Proporção e Ordem dos Logos Ajustadas */
+.logo-claro { height: 46px; object-fit: contain; }
+.logo-inpress { height: 38px; object-fit: contain; }
+.logo-dialog { height: 26px; object-fit: contain; }
+.divider-v{width:1px;height:24px;background:var(--border);}
+
+/* Botões */
+.action-btn{
+  background:transparent;border:1px solid var(--border);color:var(--text-main);padding:8px 16px;
+  border-radius:6px;font-family:'Inter';font-size:12px;font-weight:600;cursor:pointer;transition:0.2s;
+}
+.action-btn:hover{border-color:var(--red);color:var(--red);}
+.btn-primary{background:var(--red);color:#fff;border-color:var(--red);}
+.btn-primary:hover{background:var(--red-dark);color:#fff;}
+
+/* Select de Mês */
+.month-select{
+  appearance:none;background:var(--g100);border:1px solid var(--border);color:var(--text-main);
+  padding:8px 36px 8px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+}
+.month-select:focus{outline:none;border-color:var(--red);}
+.loading-bar{position:fixed;top:0;left:0;height:3px;background:var(--red);transition:width 0.4s;z-index:999;width:0;}
+
+main{padding:32px 40px 60px;max-width:1440px;margin:0 auto;}
+.section-label{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:8px;}
+.section-title{font-weight:800;font-size:22px;color:var(--text-main);letter-spacing:-0.5px;margin-bottom:20px;}
+section{margin-bottom:40px;}
+
+.card{background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);padding:24px;transition:0.3s;}
+.card-title{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text-sec);margin-bottom:16px;}
+
+/* Grid KPIs */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
+.kpi-card{background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);padding:22px;position:relative;overflow:hidden;}
+.kpi-accent{position:absolute;top:0;left:0;right:0;height:4px;}
+.kpi-label{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text-sec);margin-bottom:10px;}
+.kpi-value{font-weight:800;font-size:32px;color:var(--text-main);line-height:1;margin-bottom:6px;}
+.kpi-meta{font-size:11px;color:var(--text-sec);}
+.kpi-bar{margin-top:10px;height:4px;background:var(--g100);border-radius:2px;overflow:hidden;}
+.kpi-bar-fill{height:100%;border-radius:2px;}
+.kpi-badge{margin-top:10px;display:inline-block;padding:4px 10px;border-radius:12px;font-size:10px;font-weight:600;}
+
+/* Smart Narrative */
+.insight-box{background:var(--red-muted);border-left:4px solid var(--red);border-radius:0 8px 8px 0;padding:18px 22px;margin-bottom:24px;color:var(--text-main);font-size:13px;line-height:1.6;}
+.insight-box b{color:var(--red);}
+
+/* Metas Bora & Tooltips */
+.metas-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.bullet-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;position:relative;}
+.br-label{font-size:12px;font-weight:500;color:var(--text-sec);width:90px;flex-shrink:0;}
+.br-track{flex:1;height:24px;background:var(--g100);border-radius:6px;position:relative;}
+.br-meta-fill{position:absolute;top:0;bottom:0;left:0;background:var(--border);border-radius:6px;}
+.br-real-fill{position:absolute;top:4px;bottom:4px;left:0;border-radius:4px;}
+.br-meta-line{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text-main);border-radius:1px;z-index:2;}
+.br-value{font-weight:700;font-size:13px;width:60px;text-align:right;flex-shrink:0;}
+.br-delta{font-size:11px;font-weight:600;width:54px;text-align:right;flex-shrink:0;}
+.delta-pos{color:var(--green);} .delta-neg{color:var(--red);}
+
+/* Regionais */
+.chart-2col{display:grid;grid-template-columns:1fr 320px;gap:16px;}
+.chart-wrap{position:relative;width:100%;}
+.regionais-side{display:flex;flex-direction:column;gap:12px;}
+.side-card{background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:18px 20px; cursor:pointer; transition:0.2s;}
+.side-card:hover, .side-card.active{border-color:var(--red); background:var(--red-muted); transform:translateY(-2px);}
+.side-card.alert{border-left:4px solid var(--red);}
+.side-card.ok{border-left:4px solid var(--green);}
+.side-card.neutral{border-left:4px solid var(--g400);}
+.sc-tag{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text-sec);margin-bottom:6px;}
+.sc-num{font-weight:800;font-size:26px;color:var(--text-main);line-height:1;margin-bottom:4px;}
+.sc-desc{font-size:11px;color:var(--g700);line-height:1.5;}
+
+/* Tabelas e Benchmarks */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text-sec);padding:12px;background:var(--g100);text-align:left;border-bottom:1px solid var(--border);}
+.tbl td{font-size:12px;padding:12px;border-bottom:1px solid var(--border);color:var(--text-sec);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.chip{display:inline-block;padding:4px 10px;border-radius:10px;font-size:10px;font-weight:600;}
+.chip-ok{background:var(--greenl);color:var(--green);}
+.chip-warn{background:var(--amberl);color:var(--amber);}
+.chip-alert{background:var(--red-muted);color:var(--red);}
+.chip-blue{background:var(--bluel);color:var(--blue);}
+
+.bench-row{margin-bottom:16px;}
+.bench-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;}
+.bench-name{font-size:12px;font-weight:500;color:var(--text-sec);}
+.bench-val{font-weight:700;font-size:13px;}
+.bench-track{height:8px;background:var(--g100);border-radius:4px;overflow:hidden;}
+.bench-fill{height:100%;border-radius:4px;}
+
+/* Pilares e Temas */
+.pilar-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.pb-label{font-size:12px;font-weight:600;color:var(--text-main);width:110px;flex-shrink:0;}
+.pb-track{flex:1;height:20px;background:var(--g100);border-radius:5px;overflow:hidden;}
+.pb-fill{height:100%;border-radius:5px;}
+.pb-value{font-weight:700;font-size:12px;width:72px;text-align:right;flex-shrink:0;color:var(--text-sec);}
+
+.temas-filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.filter-chip{padding:6px 14px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg-card);color:var(--text-sec);transition:0.2s;}
+.filter-chip.active{background:var(--text-main);color:var(--bg-main);border-color:var(--text-main);}
+.pilar-dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;}
+
+.empty{text-align:center;padding:40px;color:var(--text-sec);font-size:13px;}
+.fade-up{animation:fadeUp 0.4s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+@media(max-width:900px){
+  .kpi-grid,.metas-grid,.chart-2col{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="loading-bar" id="loadingBar"></div>
+
+<header>
+  <div class="logo-group">
+    <img src="https://1000logos.net/wp-content/uploads/2021/05/Claro-logo.png" class="logo-claro" alt="Claro">
+    <div class="divider-v"></div>
+    <span style="font-size:11px; color:var(--text-sec); font-weight:700; letter-spacing:1px;">DATA INSIGHTS - CI</span>
+    <div class="divider-v"></div>
+    <img src="https://cdn.cookielaw.org/logos/23ec7054-e8d6-4022-8116-c8d6804fb97a/12594fce-d179-455f-b00d-ab2618b7aec1/4d4308fa-7f71-482c-be9e-f4f68e6b98e4/Logo_InPress_Horizonal_Preta_(1).png" class="logo-inpress" alt="InPress">
+    <img src="https://dialog.ci/wp-content/uploads/2022/03/logo-dialog-cor.png" class="logo-dialog" alt="Dialog">
+  </div>
+  <div class="header-right">
+    <button class="action-btn" onclick="toggleDarkMode()" id="btnTheme">Modo Escuro</button>
+    <button class="action-btn btn-primary" onclick="exportPDF()">Exportar Relatório</button>
+    <select class="month-select" id="monthSelect" onchange="loadMonth(this.value)">
+      <option value="">Selecione o mês...</option>
+      <option value="janeiro/2026">Janeiro 2026</option>
+      <option value="fevereiro/2026">Fevereiro 2026</option>
+      <option value="março/2026">Março 2026</option>
+      <option value="abril/2026">Abril 2026</option>
+      <option value="maio/2026">Maio 2026</option>
+    </select>
+  </div>
+</header>
+
+<div id="pdf-container">
+  <main id="mainContent">
+    <div class="empty">Carregando painel analítico...</div>
+  </main>
+</div>
+
+<script>
+const SHEET_ID = '10wNc607sjK9PtE9dJy5jVH34bz_DfR6Ysbe9fVpmNZg';
+const BASE = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=`;
+const charts = {};
+
+// --- Tema Escuro e PDF ---
+let isDark = false;
+function toggleDarkMode() {
+  isDark = !isDark;
+  document.body.classList.toggle('dark-mode', isDark);
+  document.getElementById('btnTheme').innerText = isDark ? "Modo Claro" : "Modo Escuro";
+  Object.values(charts).forEach(c => {
+    if(c.options.scales && c.options.scales.x) {
+      c.options.scales.x.ticks.color = isDark ? '#a3a3a3' : '#9CA3AF';
+      c.options.scales.y.ticks.color = isDark ? '#a3a3a3' : '#9CA3AF';
+      c.update();
+    }
+  });
+}
+
+function exportPDF() {
+  const element = document.getElementById('pdf-container');
+  const opt = {
+    margin: [10, 0, 10, 0],
+    filename: 'Relatorio_Claro_CI.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: isDark ? '#0a0a0a' : '#F4F5F7' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+  };
+  html2pdf().set(opt).from(element).save();
+}
+
+// --- FUNÇÕES GERAIS E CONVERSORES À PROVA DE BALAS (Motor Original) ---
+const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function serialToMesAno(serial) {
+  if (!serial || isNaN(serial)) return null;
+  const n = parseFloat(serial);
+  if (n < 40000 || n > 50000) return null;
+  const d = new Date((n - 25569) * 86400000);
+  return `${MESES[d.getUTCMonth()]}/${d.getUTCFullYear()}`;
+}
+function normalizeMes(val) {
+  if (!val) return null;
+  const v = String(val).trim();
+  if (/^\d{5}(\.\d+)?$/.test(v)) return serialToMesAno(parseFloat(v));
+  return v.toLowerCase().replace('janeiro','janeiro').trim();
+}
+function pct(str) {
+  if(!str||str==='#DIV/0!'||str==='—') return null;
+  const n=parseFloat(String(str).replace('%','').replace(',','.'));
+  return isNaN(n)?null:n;
+}
+function num(str) {
+  if(!str) return null;
+  const n=parseFloat(String(str).replace(/\./g,'').replace(',','.'));
+  return isNaN(n)?null:n;
+}
+function fmtPct(v,d=2){ if(v===null||v===undefined)return'—'; return v.toFixed(d).replace('.',',')+('%'); }
+function setLoading(p){ document.getElementById('loadingBar').style.width=p+'%'; }
+
+// --- LEITOR DE DADOS ---
+async function fetchSheet(sheetName) {
+  const url = BASE + encodeURIComponent(sheetName);
+  const res = await fetch(url);
+  const text = await res.text();
+  const lines = text.trim().split('\n');
+  const parseLine = line => {
+    const result=[]; let cur='', inQ=false;
+    for(let i=0; i<line.length; i++){
+      const c=line[i];
+      if(c==='"') inQ=!inQ; else if(c===','&&!inQ) {result.push(cur); cur='';} else cur+=c;
+    }
+    result.push(cur); return result;
+  };
+  const headers = parseLine(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = parseLine(line);
+    const obj = {};
+    headers.forEach((h,i) => obj[h.trim()] = (vals[i]||'').trim());
+    return obj;
+  });
+}
+
+// --- FLUXO PRINCIPAL ---
+async function loadMonth(month) {
+  if(!month) return;
+  const main = document.getElementById('mainContent');
+  setLoading(10);
+
+  const parts = month.split('/');
+  const mesNome = parts[0];
+  const anoNum = parseInt(parts[1]);
+
+  try {
+    const [metas, regionais, emails, kpis, pilares, temas, benchmarks] = await Promise.all([
+      fetchSheet('Metas Bora (Dialog)'), fetchSheet('Usuários Cadastrados (Dialog)'),
+      fetchSheet('E-mail (InPress)'), fetchSheet('KPIS (Dialog + InPress)'),
+      fetchSheet('Pilares estratégicos (Dialog + InPress)'), fetchSheet('Temas 2025 (InPress)'),
+      fetchSheet('Benchmarks (Dialog + InPress)')
+    ]);
+    setLoading(80);
+
+    // NORMALIZADOR SALVADOR DA PÁTRIA
+    const norm = rows => rows.map(r => ({...r, _mes: normalizeMes(r['Mês'] || r['mês'] || '')}));
+
+    const nMetas = norm(metas);
+    const nRegionais = norm(regionais);
+    
+    const monthMetas = nMetas.filter(r => r._mes === month);
+    const monthRegionais = nRegionais.filter(r => r._mes === month);
+    const monthKpis = norm(kpis).filter(r => r._mes === month);
+    const monthPilares = norm(pilares).filter(r => r._mes === month);
+    const monthTemas = norm(temas).filter(r => r._mes === month);
+    const monthBench = norm(benchmarks).filter(r => r._mes === month);
+    const emailRows = emails.filter(r => (r['Mês']||'').toLowerCase().trim() === mesNome.toLowerCase());
+
+    setLoading(90);
+    renderDashboard(main, { month, mesNome, anoNum, monthMetas, monthRegionais, emailRows, monthKpis, monthPilares, monthTemas, monthBench, allMetas: nMetas });
+    setLoading(100); setTimeout(()=>setLoading(0),600);
+  } catch(e) {
+    main.innerHTML=`<div class="empty" style="color:var(--red);">Erro ao carregar dados. ${e.message}</div>`;
+    setLoading(0);
+  }
+}
+
+function renderDashboard(container, data) {
+  const {month, mesNome, anoNum, monthMetas, monthRegionais, emailRows, monthKpis, monthPilares, monthTemas, monthBench, allMetas} = data;
+  const label = mesNome.charAt(0).toUpperCase() + mesNome.slice(1) + ' ' + anoNum;
+
+  const cadastReal = pct(monthMetas.find(r=>r['Indicador']==='Usuários Cadastrados')?.['Realizado']);
+  const cadastMeta = pct(monthMetas.find(r=>r['Indicador']==='Usuários Cadastrados')?.['Meta']);
+  const ativosReal = pct(monthMetas.find(r=>r['Indicador']==='Usuários Ativos')?.['Realizado']);
+  const ativosMeta = pct(monthMetas.find(r=>r['Indicador']==='Usuários Ativos')?.['Meta']);
+  const uptime = pct(monthKpis.find(r=>r['Indicador']==='Uptime da plataforma')?.['Realizado']);
+  const temasAprov = monthTemas.filter(r=>r['Aprovado em Comitê']?.toLowerCase().includes('sim')).length;
+
+  container.innerHTML=`
+<section class="fade-up">
+  <div class="section-label">Visão Geral · ${label}</div>
+  <div class="kpi-grid">
+    ${kpiCard('Usuários Cadastrados', cadastReal, cadastMeta)}
+    ${kpiCard('Usuários Ativos', ativosReal, ativosMeta)}
+    ${kpiCard('Temas de Comunicação', monthTemas.length, null, `${temasAprov} aprovados em comitê`)}
+    ${kpiCard('Uptime Plataforma', uptime, 99, 'Meta: 99%')}
+  </div>
+  <div class="insight-box" id="smartNarrative">Analisando dados do mês...</div>
+</section>
+
+<section class="fade-up" style="animation-delay:0.05s">
+  <div class="section-label">Performance</div>
+  <div class="section-title">Proposição de Metas Bora</div>
+  <div class="metas-grid">
+    <div class="card"><div class="card-title">Usuários Cadastrados — Histórico</div><div id="cadRows"></div></div>
+    <div class="card"><div class="card-title">Usuários Ativos — Histórico</div><div id="atvRows"></div></div>
+  </div>
+</section>
+
+<section class="fade-up" style="animation-delay:0.08s">
+  <div class="section-label">Cobertura</div>
+  <div class="section-title">Adesão por Área/Local</div>
+  <div class="chart-2col">
+    <div class="card">
+      <div class="card-title">Por regional — taxa de adesão</div>
+      <div class="chart-wrap" style="height:300px;"><canvas id="regionaisChart"></canvas></div>
+      <p style="font-size: 10px; color: var(--text-sec); text-align: center; margin-top: 10px;">* Clique nos botões ao lado para destacar no gráfico</p>
+    </div>
+    <div class="regionais-side" id="regionaisSide"></div>
+  </div>
+</section>
+
+<section class="fade-up" style="animation-delay:0.1s">
+  <div class="section-label">Mercado</div>
+  <div class="section-title">Comparativo do Mesmo Segmento</div>
+  <div class="metas-grid" id="benchSection"></div>
+</section>
+
+<section class="fade-up" style="animation-delay:0.12s">
+  <div class="section-label">Estratégia</div>
+  <div class="section-title">Indicadores Executivos</div>
+  <div class="card">
+    <table class="tbl">
+      <thead><tr><th>Indicador</th><th>Meta</th><th>Realizado</th><th>Atingimento</th><th>Situação</th></tr></thead>
+      <tbody id="kpiBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="fade-up" style="animation-delay:0.14s">
+  <div class="section-label">Conteúdo</div>
+  <div class="section-title">Distribuição por Pilar Estratégico</div>
+  <div class="chart-2col">
+    <div class="card"><div class="card-title">Visualizações por pilar</div><div id="pilaresRows"></div></div>
+    <div class="card"><div class="card-title">Distribuição %</div><div class="chart-wrap" style="height:260px;"><canvas id="pilaresDonut"></canvas></div></div>
+  </div>
+</section>
+
+<section class="fade-up" style="animation-delay:0.16s">
+  <div class="section-label">Comunicação</div>
+  <div class="section-title">Volume de E-mails — ${anoNum-1} vs ${anoNum}</div>
+  <div class="chart-2col">
+    <div class="card"><div class="card-title" id="emailLegend">Comparativo mensal</div><div id="emailRows"></div></div>
+    <div style="display:flex;flex-direction:column;gap:12px;" id="emailKpis"></div>
+  </div>
+</section>
+
+<section class="fade-up" style="animation-delay:0.18s">
+  <div class="section-label">Planejamento</div>
+  <div class="section-title">Temas de Comunicação — ${label}</div>
+  <div class="card">
+    <div class="temas-filters" id="temasFilters"></div>
+    <div style="overflow-x:auto;">
+      <table class="tbl">
+        <thead><tr><th>Tema</th><th>Público</th><th>Esforço</th><th>Comitê</th><th>Canais ativos</th></tr></thead>
+        <tbody id="temasBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>`;
+
+  renderMetasHistorico(allMetas, month);
+  renderRegionais(monthRegionais);
+  renderBenchmarks(monthBench);
+  renderKpis(monthKpis);
+  renderPilares(monthPilares);
+  renderEmails(emailRows, anoNum, mesNome);
+  renderTemas(monthTemas);
+
+  // IA Insight Text
+  let text = '';
+  if(cadastReal!==null && cadastMeta!==null){
+    const dc = cadastReal - cadastMeta;
+    text += `<strong>Cadastrados:</strong> ${fmtPct(cadastReal)} vs. meta de ${fmtPct(cadastMeta)} (${dc>=0?'+':''}${dc.toFixed(2)}pp). &nbsp;|&nbsp; `;
+  }
+  if(ativosReal!==null && ativosMeta!==null){
+    const da = ativosReal - ativosMeta;
+    text += `<strong>Ativos:</strong> ${fmtPct(ativosReal)} vs. meta de ${fmtPct(ativosMeta)} (${da>=0?'+':''}${da.toFixed(2)}pp).`;
+  }
+  document.getElementById('smartNarrative').innerHTML = text || 'Dados insuficientes para gerar análise neste mês.';
+}
+
+function kpiCard(label, real, target, customSub=null) {
+  let color='var(--g400)', badge='', pctFill=0;
+  if(real!==null && target!==null){
+    const ratio = real/target;
+    if(ratio>=1){color='var(--green)'; badge=`<span class="kpi-badge chip-ok">Meta atingida</span>`;}
+    else if(ratio>=0.85){color='var(--amber)'; badge=`<span class="kpi-badge chip-warn">Próximo</span>`;}
+    else{color='var(--red)'; badge=`<span class="kpi-badge chip-alert">Abaixo</span>`;}
+    pctFill = Math.min(ratio*100, 100);
+  } else if(real !== null) { color = 'var(--blue)'; }
+  
+  const valText = label==='Temas de Comunicação' ? real : (real!==null ? fmtPct(real) : '—');
+  return `<div class="kpi-card">
+    <div class="kpi-accent" style="background:${color};"></div>
+    <div class="kpi-label">${label}</div>
+    <div class="kpi-value">${valText}</div>
+    <div class="kpi-meta">${customSub ? customSub : (target!==null ? 'Meta: '+fmtPct(target) : ' ')}</div>
+    ${target!==null ? `<div class="kpi-bar"><div class="kpi-bar-fill" style="width:${pctFill}%;background:${color};"></div></div>` : ''}
+    ${badge}
+  </div>`;
+}
+
+function renderMetasHistorico(allMetas, currentMonth){
+  const months=['janeiro/2026','fevereiro/2026','março/2026','abril/2026','maio/2026'];
+  ['Usuários Cadastrados','Usuários Ativos'].forEach((ind,idx)=>{
+    const el = document.getElementById(idx===0?'cadRows':'atvRows');
+    let html='';
+    months.forEach(m=>{
+      const row = allMetas.find(r=>r._mes===m && r['Indicador']===ind);
+      if(!row || !row['Realizado']) return;
+      const metaV=pct(row['Meta']), realV=pct(row['Realizado']);
+      const mLabel = m.split('/')[0].slice(0,3).toUpperCase();
+      const delta = (metaV!==null && realV!==null) ? (realV-metaV) : null;
+      const barColor = delta>=0 ? 'var(--green)' : 'var(--red)';
+      html+=`<div class="bullet-row" style="${m===currentMonth?'':'opacity:0.6'}">
+        <div class="br-label" style="${m===currentMonth?'color:var(--text-main)':''}">${mLabel}${m===currentMonth?' ◀':''}</div>
+        <div class="br-track">
+          ${metaV!==null ? `<div class="br-meta-fill" style="width:${metaV}%"></div>` : ''}
+          <div class="br-real-fill" style="width:${realV}%;background:${barColor};"></div>
+          ${metaV!==null ? `<div class="br-meta-line" style="left:${metaV}%"></div>` : ''}
+        </div>
+        <div class="br-value" style="color:${barColor}">${fmtPct(realV)}</div>
+        <div class="br-delta ${delta>=0?'delta-pos':'delta-neg'}">${delta!==null?(delta>=0?'+':'')+delta.toFixed(1)+'pp':''}</div>
+      </div>`;
+    });
+    el.innerHTML = html || '<div class="empty">Sem dados</div>';
+  });
+}
+
+// Filtro Cruzado Regional Global
+window.filtrarGrafico = function(area) {
+  document.querySelectorAll('.reg-card-filter').forEach(c => c.classList.toggle('active', c.dataset.area === area));
+  const chart = charts['regionaisChart'];
+  if(chart) {
+    chart.data.datasets[0].backgroundColor = chart.data.labels.map(l => l === area ? '#E8002A' : '#1E2130');
+    chart.update();
+  }
+};
+
+function renderRegionais(regionais){
+  const side = document.getElementById('regionaisSide');
+  const regs = {};
+  regionais.forEach(r=>{
+    const key = r['Sigla']||r['Área/Local']||'?';
+    if(!regs[key]) regs[key] = {name: r['Área/Local']||key, cad: 0, ncad: 0};
+    const q = num(r['Quantidade'])||0;
+    if((r['Status']||'').toLowerCase().includes('não')) regs[key].ncad=q; else regs[key].cad=q;
+  });
+  const sorted = Object.entries(regs).map(([k,v])=>({k, ...v, total: v.cad+v.ncad, taxa: v.cad+v.ncad>0 ? (v.cad/(v.cad+v.ncad))*100 : 0})).filter(r=>r.total>0).sort((a,b)=>a.taxa-b.taxa);
+
+  if(!sorted.length) { side.innerHTML = '<div class="empty">Sem dados</div>'; return; }
+
+  const ctx = document.getElementById('regionaisChart').getContext('2d');
+  if(charts['regionaisChart']) charts['regionaisChart'].destroy();
+  charts['regionaisChart'] = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels: sorted.map(r=>r.k),
+      datasets:[
+        {label:'Cadastrados', data:sorted.map(r=>r.cad), backgroundColor:'#1E2130', borderRadius:3, stack:'a'},
+        {label:'Não Cadastrados', data:sorted.map(r=>r.ncad), backgroundColor:'rgba(232,0,42,0.4)', borderRadius:3, stack:'a'},
+        {label:'Taxa %', data:sorted.map(r=>r.taxa), type:'line', yAxisID:'y2', borderColor:'#0052CC', borderWidth:2, pointRadius:4}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      onClick: (e, elements) => { if(elements.length>0) window.filtrarGrafico(sorted[elements[0].index].k); },
+      plugins:{legend:{position:'bottom'}},
+      scales:{
+        x:{stacked:true, grid:{display:false}}, // GRID DESATIVADO
+        y:{stacked:true, grid:{display:false}}, // GRID DESATIVADO
+        y2:{position:'right', grid:{display:false}, max:100}
+      }
+    }
+  });
+
+  side.innerHTML = sorted.map(r => `
+    <div class="side-card reg-card-filter" data-area="${r.k}" onclick="filtrarGrafico('${r.k}')">
+      <div class="sc-tag">${r.k}</div>
+      <div class="sc-num">${r.taxa.toFixed(1)}%</div>
+      <div class="sc-desc">${r.ncad.toLocaleString('pt-BR')} off</div>
+    </div>
+  `).join('');
+}
+
+function renderBenchmarks(bench){
+  const el = document.getElementById('benchSection');
+  const renderGroup = (metric,title)=>{
+    const rows = bench.filter(r=>r['Métrica']===metric);
+    if(!rows.length) return '';
+    const maxVal = Math.max(...rows.map(r=>pct(r['Valor'])||0), 100);
+    const barsHtml = rows.map(r=>{
+      const v = pct(r['Valor']); const isClaro = r['Segmento']==='Claro';
+      const color = isClaro ? (v>=70?'var(--green)':v>=50?'var(--amber)':'var(--red)') : 'var(--g300)';
+      return `<div class="bench-row"><div class="bench-header"><span class="bench-name" style="${isClaro?'font-weight:700;color:var(--text-main)':''}">${r['Segmento']}</span><span class="bench-val" style="color:${color}">${fmtPct(v)}</span></div><div class="bench-track"><div class="bench-fill" style="width:${(v/maxVal)*100}%;background:${color};"></div></div></div>`;
+    }).join('');
+    return `<div class="card"><div class="card-title">${title}</div>${barsHtml}</div>`;
+  };
+  el.innerHTML = renderGroup('Cadastrados','Cadastrados na Plataforma') + renderGroup('Ativos','Usuários Ativos');
+}
+
+function renderKpis(kpis){
+  document.getElementById('kpiBody').innerHTML = kpis.map(r=>{
+    const atgVal=pct(r['Atingimento_%']);
+    let chip='Apuração', chipClass='chip-blue';
+    if(atgVal!==null){ if(atgVal>=100){chip='Atingida'; chipClass='chip-ok';} else if(atgVal>=85){chip='Próximo'; chipClass='chip-warn';} else{chip='Abaixo'; chipClass='chip-alert';} }
+    return `<tr><td><b>${r['Indicador']}</b></td><td>${r['Meta']||'—'}</td><td>${r['Realizado']||'—'}</td><td>${fmtPct(atgVal)}</td><td><span class="chip ${chipClass}">${chip}</span></td></tr>`;
+  }).join('');
+}
+
+function renderPilares(pilares){
+  const COLORS = {'Pessoas':'#1E2130','Negócio':'#374151','Inovação':'#4B5563','Clientes':'#6B7280','Sustentabilidade':'#9CA3AF','Honestidade':'#E8002A'};
+  const total = pilares.reduce((s,r)=>s+(num(r['Visualizações'])||0),0);
+  document.getElementById('pilaresRows').innerHTML = pilares.map(r=>{
+    const views = num(r['Visualizações'])||0; const pctV = total>0?(views/total)*100:0;
+    const isAlert = r['Pilar']==='Honestidade' && views===0;
+    return `<div class="pilar-bar-row"><div class="pb-label" style="${isAlert?'color:var(--red)':''}">${isAlert?'⚠️ ':''}${r['Pilar']}</div><div class="pb-track"><div class="pb-fill" style="width:${pctV}%;background:${isAlert?'var(--red)':(COLORS[r['Pilar']]||'#9CA3AF')}"></div></div><div class="pb-value">${views>0?views.toLocaleString('pt-BR'):'0'}</div></div>`;
+  }).join('');
+
+  const ctx = document.getElementById('pilaresDonut').getContext('2d');
+  if(charts['pilaresDonut']) charts['pilaresDonut'].destroy();
+  charts['pilaresDonut'] = new Chart(ctx,{ type:'doughnut', data:{labels:pilares.map(r=>r['Pilar']), datasets:[{data:pilares.map(r=>num(r['Visualizações'])||0), backgroundColor:pilares.map(r=>COLORS[r['Pilar']]||'#9CA3AF')}]}, options:{maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}} });
+}
+
+function renderEmails(emailRows, anoNum, mesNome){
+  const el = document.getElementById('emailRows'); const kpis = document.getElementById('emailKpis');
+  const e26 = emailRows.find(r=>String(r['Ano'])===String(anoNum));
+  const e25 = emailRows.find(r=>String(r['Ano'])===String(anoNum-1));
+  if(!e26 && !e25) return el.innerHTML = '<div class="empty">Sem dados</div>';
+
+  const t26=num(e26?.['E-mail Totais'])||0, m26=num(e26?.['Massivos'])||0, s26=num(e26?.['Segmentados'])||0;
+  const t25=num(e25?.['E-mail Totais'])||0, m25=num(e25?.['Massivos'])||0, s25=num(e25?.['Segmentados'])||0;
+  const maxT = Math.max(t25,t26,1);
+
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <div style="font-size:11px;font-weight:600;width:36px;">${anoNum}</div>
+      <div style="flex:1;height:24px;background:var(--g100);border-radius:5px;display:flex;overflow:hidden;">
+        <div style="width:${(m26/maxT)*100}%;background:#1E2130;"></div><div style="width:${(s26/maxT)*100}%;background:#6B7280;"></div>
+      </div>
+      <div style="font-weight:700;font-size:13px;width:30px;text-align:right;">${t26}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="font-size:11px;font-weight:600;color:var(--text-sec);width:36px;">${anoNum-1}</div>
+      <div style="flex:1;height:24px;background:var(--g100);border-radius:5px;display:flex;overflow:hidden;">
+        <div style="width:${(m25/maxT)*100}%;background:var(--g300);"></div><div style="width:${(s25/maxT)*100}%;background:var(--border);"></div>
+      </div>
+      <div style="font-weight:700;font-size:13px;color:var(--text-sec);width:30px;text-align:right;">${t25}</div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:15px; font-size:10px;">
+      <span style="color:#1E2130">◼ Massivo</span> <span style="color:#6B7280">◼ Segmentado</span>
+    </div>`;
+
+  const reducao = t25>0 && t26>0 ? Math.round((1-t26/t25)*100) : null;
+  kpis.innerHTML=`
+    <div class="card" style="margin-bottom:0;"><div class="card-title">Redução vs ${anoNum-1}</div><div style="font-size:32px;font-weight:800;color:${reducao>0?'var(--green)':'var(--text-main)'};">${reducao!==null?'−'+reducao+'%':'—'}</div></div>
+    <div class="card" style="margin-bottom:0;"><div class="card-title">% Segmentados</div><div style="font-size:32px;font-weight:800;color:var(--blue);">${t26>0?Math.round(s26/t26*100)+'%':'—'}</div></div>`;
+}
+
+function renderTemas(temas){
+  const COLORS = {'Pessoas':'#1E2130','Negócio':'#374151','Inovação':'#4B5563','Clientes':'#6B7280','Sustentabilidade':'#9CA3AF','Honestidade':'#E8002A'};
+  const filters = document.getElementById('temasFilters');
+  const tbody = document.getElementById('temasBody');
+  const pilares = [...new Set(temas.map(r=>r['Público']).filter(Boolean))].sort();
+
+  filters.innerHTML = `<span class="filter-chip active" onclick="filterTemas('all', this)">Todos</span>` + pilares.map(p=> `<span class="filter-chip" onclick="filterTemas('${p}', this)"><span class="pilar-dot" style="background:${COLORS[p]||'#9CA3AF'}"></span>${p}</span>`).join('');
+
+  window.filterTemas = function(pilar, btn) {
+    document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+    btn.classList.add('active');
+    renderTable(pilar==='all' ? temas : temas.filter(r=>r['Público']===pilar));
+  };
+
+  const renderTable = (data) => {
+    tbody.innerHTML = data.map(r=>{
+      const isAprov = (r['Aprovado em Comitê']||'').toLowerCase().includes('sim');
+      return `<tr><td><b>${r['Tema']}</b></td><td>${r['Público']}</td><td>${r['Esforço']}</td><td><span class="chip ${isAprov?'chip-ok':'chip-warn'}">${isAprov?'Sim':'Pendente'}</span></td><td>Ativos</td></tr>`;
+    }).join('');
+  };
+  renderTable(temas);
+}
+
+window.onload = () => { document.getElementById('monthSelect').value='abril/2026'; loadMonth('abril/2026'); };
+</script>
+</body>
+</html>
