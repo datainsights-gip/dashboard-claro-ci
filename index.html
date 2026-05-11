@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Executivo — Bora / Claro</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{
+  --red:#E8002A;--red-dark:#A80020;--red-muted:#FFF0F2;--red-mid:#FF4D6A;
+  --g900:#111827;--g800:#1F2937;--g700:#374151;--g600:#4B5563;
+  --g400:#9CA3AF;--g300:#D1D5DB;--g200:#E5E7EB;--g100:#F3F4F6;--g50:#F9FAFB;
+  --white:#FFFFFF;
+  --green:#059669;--greenl:#ECFDF5;
+  --amber:#D97706;--amberl:#FFFBEB;
+  --blue:#1D4ED8;--bluel:#EFF6FF;
+  --radius:12px;--radius-lg:18px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
+  --shadow-md:0 4px 16px rgba(0,0,0,.09),0 1px 4px rgba(0,0,0,.04);
+  --font:'Plus Jakarta Sans',sans-serif;
+  --font-display:'Fraunces',serif;
+  --bg:var(--g50);--surface:var(--white);--border:var(--g200);
+  --text:var(--g900);--text-muted:var(--g600);--text-faint:var(--g400);
+}
+[data-theme="dark"]{
+  --bg:#0D1117;--surface:#161B22;--border:#30363D;
+  --text:#E6EDF3;--text-muted:#8B949E;--text-faint:#484F58;
+  --g50:#161B22;--g100:#21262D;--g200:#30363D;--g300:#3D444D;
+  --shadow:0 1px 3px rgba(0,0,0,.3),0 4px 12px rgba(0,0,0,.2);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s;}
+
+/* LOADING BAR */
+#loadingBar{position:fixed;top:0;left:0;height:3px;background:var(--red);transition:width .4s;z-index:9999;width:0;}
+
+/* TOOLTIP */
+#tooltip{position:fixed;background:#111827;color:#fff;padding:10px 14px;border-radius:8px;font-size:12px;font-family:var(--font);pointer-events:none;z-index:8888;display:none;box-shadow:0 4px 20px rgba(0,0,0,.3);line-height:1.65;min-width:160px;}
+[data-theme="dark"] #tooltip{background:#fff;color:#111827;}
+
+/* HEADER */
+header{background:var(--red);border-bottom:1px solid rgba(0,0,0,.12);position:sticky;top:0;z-index:100;}
+.header-top{display:flex;align-items:center;justify-content:space-between;padding:0 36px;height:56px;}
+.header-logos{display:flex;align-items:center;gap:22px;}
+.header-logo-img{height:26px;object-fit:contain;filter:brightness(0) invert(1);opacity:.95;transition:opacity .2s;}
+.header-logo-img.logo-dialog{height:18px;}
+.header-logo-img:hover{opacity:1;}
+.header-sep{width:1px;height:18px;background:rgba(255,255,255,.3);}
+.header-right{display:flex;align-items:center;gap:8px;}
+.month-select{appearance:none;background:rgba(0,0,0,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:6px 30px 6px 12px;border-radius:8px;font-size:12px;font-family:var(--font);font-weight:500;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;}
+.month-select:focus{outline:none;border-color:rgba(255,255,255,.6);}
+.month-select option{background:#A80020;color:#fff;}
+.icon-btn{width:32px;height:32px;border-radius:7px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.85);transition:all .2s;}
+.icon-btn:hover{background:rgba(0,0,0,.22);color:#fff;}
+.pdf-btn{padding:6px 14px;background:#fff;border:none;border-radius:7px;color:var(--red);font-size:12px;font-family:var(--font);font-weight:700;cursor:pointer;transition:all .2s;}
+.pdf-btn:hover{background:rgba(255,255,255,.88);}
+.last-update{font-size:10px;color:rgba(255,255,255,.55);letter-spacing:.5px;}
+
+/* MAIN */
+main{padding:28px 36px 64px;max-width:1440px;margin:0 auto;}
+
+/* EXECUTIVE SUMMARY */
+.exec-summary{background:linear-gradient(130deg,#111827 0%,#1a2035 100%);border-radius:var(--radius-lg);padding:24px 28px;margin-bottom:28px;border:1px solid rgba(255,255,255,.06);position:relative;overflow:hidden;}
+[data-theme="dark"] .exec-summary{background:linear-gradient(130deg,#010409 0%,#161B22 100%);}
+.exec-summary::before{content:'';position:absolute;top:-60px;right:-60px;width:250px;height:250px;border-radius:50%;background:radial-gradient(circle,rgba(232,0,42,.12),transparent 70%);pointer-events:none;}
+.exec-tag{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#FF6B82;margin-bottom:8px;}
+.exec-title{font-family:var(--font-display);font-size:17px;font-weight:700;color:#fff;margin-bottom:9px;line-height:1.35;}
+.exec-text{font-size:12px;color:rgba(255,255,255,.62);line-height:1.7;max-width:860px;}
+.exec-text strong{color:rgba(255,255,255,.9);font-weight:600;}
+.exec-badges{display:flex;gap:7px;margin-top:13px;flex-wrap:wrap;}
+.exec-badge{padding:3px 10px;border-radius:18px;font-size:10px;font-weight:600;border:1px solid;}
+.eb-green{background:rgba(5,150,105,.14);color:#34D399;border-color:rgba(52,211,153,.2);}
+.eb-amber{background:rgba(217,119,6,.14);color:#FCD34D;border-color:rgba(252,211,77,.2);}
+.eb-red{background:rgba(232,0,42,.14);color:#FF6B82;border-color:rgba(255,107,130,.2);}
+.eb-blue{background:rgba(29,78,216,.14);color:#60A5FA;border-color:rgba(96,165,250,.2);}
+
+/* SECTION */
+section{margin-bottom:34px;}
+.section-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:14px;gap:12px;}
+.section-label{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--red);margin-bottom:4px;}
+.section-title{font-family:var(--font-display);font-size:19px;font-weight:700;color:var(--text);letter-spacing:-.2px;line-height:1.2;}
+.export-btn{padding:5px 11px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);font-size:11px;font-family:var(--font);font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap;flex-shrink:0;}
+.export-btn:hover{background:var(--g100);color:var(--text);}
+.export-btns{display:flex;gap:6px;flex-shrink:0;}
+
+/* CARDS */
+.card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);padding:20px;transition:background .25s,border-color .25s;}
+.card-title{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);margin-bottom:13px;}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:18px;}
+.kpi-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);padding:18px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s,background .25s;}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
+.kpi-accent{position:absolute;top:0;left:0;right:0;height:3px;}
+.kpi-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);margin-bottom:9px;}
+.kpi-value-row{display:flex;align-items:baseline;gap:9px;margin-bottom:3px;}
+.kpi-value{font-family:var(--font-display);font-weight:700;font-size:30px;color:var(--text);line-height:1;}
+.kpi-mom{font-size:11px;font-weight:700;}
+.kpi-mom.up{color:var(--green);} .kpi-mom.down{color:var(--red);} .kpi-mom.flat{color:var(--text-faint);}
+.kpi-meta{font-size:11px;color:var(--text-faint);margin-bottom:9px;}
+.kpi-bar{height:3px;background:var(--g100);border-radius:2px;overflow:hidden;}
+.kpi-bar-fill{height:100%;border-radius:2px;transition:width 1s cubic-bezier(.4,0,.2,1);}
+.kpi-badge{margin-top:8px;display:inline-block;padding:2px 8px;border-radius:9px;font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;}
+
+/* BULLET CHARTS */
+.metas-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+.bullet-row{display:flex;align-items:center;gap:9px;margin-bottom:11px;cursor:default;}
+.br-label{font-size:11px;font-weight:500;color:var(--text-muted);width:80px;flex-shrink:0;}
+.br-track{flex:1;height:22px;background:var(--g100);border-radius:5px;position:relative;overflow:visible;transition:box-shadow .15s;border-radius:5px;}
+.bullet-row:hover .br-track{box-shadow:0 0 0 2px rgba(232,0,42,.18);}
+.br-meta-fill{position:absolute;top:0;bottom:0;left:0;background:var(--g200);border-radius:5px;}
+.br-real-fill{position:absolute;top:4px;bottom:4px;left:0;border-radius:3px;transition:width 1s cubic-bezier(.4,0,.2,1);}
+.br-meta-line{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--g700);border-radius:1px;z-index:2;}
+[data-theme="dark"] .br-meta-fill{background:rgba(255,255,255,.07);}
+[data-theme="dark"] .br-meta-line{background:rgba(255,255,255,.35);}
+.br-value{font-family:var(--font-display);font-weight:700;font-size:12px;width:52px;text-align:right;flex-shrink:0;}
+.br-delta{font-size:10px;font-weight:700;width:48px;text-align:right;flex-shrink:0;}
+.delta-pos{color:var(--green);} .delta-neg{color:var(--red);}
+
+/* INSIGHT BOX */
+.insight-box{background:#111827;border-radius:var(--radius);padding:15px 19px;display:flex;gap:11px;align-items:flex-start;margin-top:13px;}
+[data-theme="dark"] .insight-box{background:rgba(255,255,255,.04);border:1px solid var(--border);}
+.insight-ico{width:26px;height:26px;border-radius:6px;background:rgba(232,0,42,.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#FF6B82;}
+.insight-text{font-size:12px;color:rgba(255,255,255,.65);line-height:1.65;}
+[data-theme="dark"] .insight-text{color:var(--text-muted);}
+.insight-text strong{color:#fff;}
+[data-theme="dark"] .insight-text strong{color:var(--text);}
+
+/* LAYOUT */
+.chart-2col{display:grid;grid-template-columns:1fr 290px;gap:13px;}
+.chart-wrap{position:relative;width:100%;}
+
+/* SIDE CARDS */
+.regionais-side{display:flex;flex-direction:column;gap:9px;}
+.side-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);padding:15px 17px;transition:background .25s;}
+.side-card.alert{border-left:3px solid var(--red);}
+.side-card.ok{border-left:3px solid var(--green);}
+.side-card.neutral{border-left:3px solid var(--g300);}
+.sc-tag{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);margin-bottom:5px;}
+.sc-num{font-family:var(--font-display);font-weight:700;font-size:21px;color:var(--text);line-height:1.1;margin-bottom:3px;}
+.sc-desc{font-size:11px;color:var(--text-muted);line-height:1.5;}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);padding:9px 12px;background:var(--g50);text-align:left;border-bottom:1px solid var(--border);}
+[data-theme="dark"] .tbl th{background:rgba(255,255,255,.03);}
+.tbl td{font-size:12px;padding:10px 12px;border-bottom:1px solid var(--g100);color:var(--text-muted);vertical-align:middle;}
+[data-theme="dark"] .tbl td{border-bottom-color:var(--border);}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:var(--g50);}
+[data-theme="dark"] .tbl tr:hover td{background:rgba(255,255,255,.02);}
+.chip{display:inline-block;padding:2px 8px;border-radius:8px;font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;}
+.chip-ok{background:var(--greenl);color:var(--green);}
+.chip-warn{background:var(--amberl);color:var(--amber);}
+.chip-alert{background:var(--red-muted);color:var(--red);}
+.chip-blue{background:var(--bluel);color:var(--blue);}
+.chip-neutral{background:var(--g100);color:var(--text-faint);}
+[data-theme="dark"] .chip-ok{background:rgba(5,150,105,.18);}
+[data-theme="dark"] .chip-warn{background:rgba(217,119,6,.18);}
+[data-theme="dark"] .chip-alert{background:rgba(232,0,42,.18);}
+[data-theme="dark"] .chip-blue{background:rgba(29,78,216,.18);}
+[data-theme="dark"] .chip-neutral{background:rgba(255,255,255,.06);}
+
+/* SEMAFORO */
+.semaforo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:13px;}
+.sem-item{padding:11px 13px;border-radius:9px;display:flex;align-items:center;gap:8px;}
+.sem-red{background:#FFF0F0;} .sem-amber{background:var(--amberl);} .sem-green{background:var(--greenl);} .sem-blue{background:var(--bluel);}
+[data-theme="dark"] .sem-red{background:rgba(232,0,42,.1);} [data-theme="dark"] .sem-amber{background:rgba(217,119,6,.1);} [data-theme="dark"] .sem-green{background:rgba(5,150,105,.1);} [data-theme="dark"] .sem-blue{background:rgba(29,78,216,.1);}
+.sem-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sd-red{background:var(--red);} .sd-amber{background:var(--amber);} .sd-green{background:var(--green);} .sd-blue{background:var(--blue);}
+.sem-label{font-size:11px;font-weight:600;color:var(--text);}
+.sem-desc{font-size:10px;color:var(--text-faint);}
+
+/* BENCH */
+.bench-row{margin-bottom:14px;}
+.bench-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
+.bench-name{font-size:12px;font-weight:500;color:var(--text-muted);}
+.bench-val{font-family:var(--font-display);font-weight:700;font-size:13px;}
+.bench-track{height:6px;background:var(--g100);border-radius:3px;overflow:hidden;}
+.bench-fill{height:100%;border-radius:3px;}
+
+/* PILARES */
+.pilar-bar-row{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+.pb-label{font-size:11px;font-weight:600;color:var(--text);width:108px;flex-shrink:0;}
+.pb-track{flex:1;height:16px;background:var(--g100);border-radius:4px;overflow:hidden;}
+.pb-fill{height:100%;border-radius:4px;}
+.pb-value{font-family:var(--font-display);font-weight:700;font-size:12px;width:66px;text-align:right;flex-shrink:0;color:var(--text-muted);}
+.pb-pct{font-size:10px;color:var(--text-faint);width:32px;text-align:right;flex-shrink:0;}
+
+/* TEMAS */
+.temas-filters{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.filter-chip{padding:4px 11px;border-radius:18px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all .15s;}
+.filter-chip:hover{background:var(--g100);}
+.filter-chip.active{background:var(--g900);color:#fff;border-color:var(--g900);}
+[data-theme="dark"] .filter-chip.active{background:#fff;color:#111827;border-color:#fff;}
+.pilar-dot{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:4px;vertical-align:middle;}
+
+/* LOADING */
+.loading-screen{padding:60px 0;text-align:center;color:var(--text-faint);}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--g200);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.fade-up{animation:fadeUp .36s ease both;}
+.empty{text-align:center;padding:22px;color:var(--text-faint);font-size:12px;font-style:italic;}
+
+/* RESPONSIVE */
+@media(max-width:1100px){.kpi-grid{grid-template-columns:1fr 1fr;}.chart-2col,.metas-grid{grid-template-columns:1fr;}}
+@media(max-width:700px){main{padding:14px 14px 48px;}.header-top{padding:0 14px;}.kpi-grid{grid-template-columns:1fr;}.semaforo-grid{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<div id="loadingBar"></div>
+<div id="tooltip"></div>
+
+<header>
+  <div class="header-top">
+    <div class="header-logos">
+      <img class="header-logo-img" src="https://1000logos.net/wp-content/uploads/2021/05/Claro-logo.png" alt="Claro" onerror="this.style.display='none'">
+      <div class="header-sep"></div>
+      <img class="header-logo-img" src="https://cdn.cookielaw.org/logos/23ec7054-e8d6-4022-8116-c8d6804fb97a/12594fce-d179-455f-b00d-ab2618b7aec1/4d4308fa-7f71-482c-be9e-f4f68e6b98e4/Logo_InPress_Horizonal_Preta_(1).png" alt="InPress" onerror="this.style.display='none'">
+      <div class="header-sep"></div>
+      <img class="header-logo-img logo-dialog" src="https://dialog.ci/wp-content/uploads/2022/03/logo-dialog-cor.png" alt="Dialog" onerror="this.style.display='none'">
+    </div>
+    <div class="header-right">
+      <select class="month-select" id="monthSelect" onchange="loadMonth(this.value)">
+        <option value="">Selecione o mes...</option>
+        <option value="janeiro/2026">Janeiro 2026</option>
+        <option value="fevereiro/2026">Fevereiro 2026</option>
+        <option value="março/2026">Marco 2026</option>
+        <option value="abril/2026">Abril 2026</option>
+        <option value="maio/2026">Maio 2026</option>
+      </select>
+      <button class="icon-btn" title="Modo escuro" onclick="toggleTheme()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      </button>
+      <button class="pdf-btn" onclick="exportPDF()">Exportar PDF</button>
+      <span class="last-update" id="lastUpdate">—</span>
+    </div>
+  </div>
+</header>
+
+<main id="mainContent">
+  <div class="loading-screen">
+    <div style="font-family:'Fraunces',serif;font-size:19px;font-weight:700;color:var(--text-muted);margin-bottom:6px;">Dashboard Executivo</div>
+    <div style="font-size:13px;">Selecione um mes no menu acima.</div>
+  </div>
+</main>
+
+<script>
+const SHEET_ID='10wNc607sjK9PtE9dJy5jVH34bz_DfR6Ysbe9fVpmNZg';
+const BASE=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=`;
+const charts={};
+let globalData=null;
+
+// THEME
+function toggleTheme(){const d=document.documentElement;const dk=d.getAttribute('data-theme')==='dark';d.setAttribute('data-theme',dk?'light':'dark');localStorage.setItem('theme',dk?'light':'dark');if(globalData)setTimeout(refreshCharts,120);}
+(()=>{const t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);})();
+
+// DATE
+const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function serialToMesAno(n){n=parseFloat(n);if(isNaN(n)||n<40000||n>55000)return null;const d=new Date((n-25569)*86400000);return`${MESES[d.getUTCMonth()]}/${d.getUTCFullYear()}`;}
+function normalizeMes(v){if(!v)return null;const s=String(v).trim();if(/^\d{5}(\.\d+)?$/.test(s))return serialToMesAno(s);return s.toLowerCase().trim();}
+
+// HELPERS
+function pct(s){if(!s||s==='#DIV/0!'||s==='—')return null;const n=parseFloat(String(s).replace('%','').replace(',','.'));return isNaN(n)?null:n;}
+function num(s){if(!s)return null;const n=parseFloat(String(s).replace(/\./g,'').replace(',','.'));return isNaN(n)?null:n;}
+function fmtPct(v,d=2){if(v===null||v===undefined)return'—';return v.toFixed(d).replace('.',',')+('%');}
+function fmtNum(v){if(v===null||v===undefined)return'—';return v.toLocaleString('pt-BR');}
+
+// FETCH
+async function fetchSheet(name){const r=await fetch(BASE+encodeURIComponent(name));if(!r.ok)throw new Error(`HTTP ${r.status}: "${name}"`);return parseCSV(await r.text());}
+function parseCSV(text){const lines=text.trim().split('\n');const headers=parseCSVLine(lines[0]);return lines.slice(1).map(l=>{const v=parseCSVLine(l);const o={};headers.forEach((h,i)=>o[h.trim()]=(v[i]||'').trim());return o;});}
+function parseCSVLine(l){const r=[];let c='',q=false;for(let i=0;i<l.length;i++){const ch=l[i];if(ch==='"'){q=!q;}else if(ch===','&&!q){r.push(c);c='';}else c+=ch;}r.push(c);return r;}
+
+// UI
+function setLoading(p){document.getElementById('loadingBar').style.width=p+'%';}
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+// TOOLTIP
+const ttEl=document.getElementById('tooltip');
+function showTT(e,html){ttEl.innerHTML=html;ttEl.style.display='block';moveTT(e);}
+function moveTT(e){const x=e.clientX+14,y=e.clientY-8;ttEl.style.left=(x+ttEl.offsetWidth>window.innerWidth?x-ttEl.offsetWidth-20:x)+'px';ttEl.style.top=y+'px';}
+function hideTT(){ttEl.style.display='none';}
+
+// COUNT-UP
+function countUp(el,target,suffix,decimals,duration=900){if(isNaN(target))return;const start=performance.now();function step(now){const p=Math.min((now-start)/duration,1),ease=1-Math.pow(1-p,3),v=target*ease;el.textContent=(decimals>0?v.toFixed(decimals).replace('.',','):Math.round(v).toLocaleString('pt-BR'))+suffix;if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);}
+
+// EXPORT
+function exportChartPNG(id,fname){const c=document.getElementById(id);if(!c)return;const a=document.createElement('a');a.download=fname+'.png';a.href=c.toDataURL('image/png');a.click();}
+function exportCSV(data,fname){if(!data||!data.length)return;const h=Object.keys(data[0]);const rows=data.map(r=>h.map(k=>`"${(r[k]||'').replace(/"/g,'""')}"`).join(','));const blob=new Blob([h.join(',')+'\n'+rows.join('\n')],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname+'.csv';a.click();}
+async function exportPDF(){const btn=document.querySelector('.pdf-btn');btn.textContent='Gerando...';btn.disabled=true;try{const c=await html2canvas(document.getElementById('mainContent'),{scale:1.4,useCORS:true});const a=document.createElement('a');a.href=c.toDataURL('image/jpeg',.9);a.download='dashboard-bora.jpg';a.click();}catch(e){alert('Erro: '+e.message);}btn.textContent='Exportar PDF';btn.disabled=false;}
+
+// LOAD
+async function loadMonth(month){
+  if(!month)return;
+  const main=document.getElementById('mainContent');
+  main.innerHTML=`<div class="loading-screen"><span class="spinner"></span><div style="font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:var(--text-muted);margin-top:12px;">Carregando dados...</div></div>`;
+  setLoading(10);
+  const parts=month.split('/'),mesNome=parts[0],anoNum=parseInt(parts[1]);
+  const mesIdx=MESES.indexOf(mesNome),prevMes=mesIdx>0?MESES[mesIdx-1]:MESES[11],prevAno=mesIdx>0?anoNum:anoNum-1;
+  const monthPrev=`${prevMes}/${prevAno}`;
+  try{
+    const [metas,regionais,emails,kpis,pilares,temas,benchmarks]=await Promise.all([
+      fetchSheet('Metas Bora (Dialog)'),fetchSheet('Usuários Cadastrados (Dialog)'),
+      fetchSheet('E-mail (InPress)'),fetchSheet('KPIS (Dialog + InPress)'),
+      fetchSheet('Pilares estratégicos (Dialog + InPress)'),fetchSheet('Temas 2025 (InPress)'),
+      fetchSheet('Benchmarks (Dialog + InPress)')
+    ]);
+    setLoading(78);
+    const norm=rows=>rows.map(r=>({...r,_mes:normalizeMes(r['Mês']||r['mês']||'')}));
+    const nM=norm(metas),nR=norm(regionais),nK=norm(kpis),nP=norm(pilares),nT=norm(temas),nB=norm(benchmarks);
+    const fil=(arr,m)=>arr.filter(r=>r._mes===m);
+    globalData={month,mesNome,anoNum,monthPrev,
+      monthMetas:fil(nM,month),prevMetas:fil(nM,monthPrev),
+      monthRegionais:fil(nR,month),monthKpis:fil(nK,month),
+      monthPilares:fil(nP,month),monthTemas:fil(nT,month),
+      monthBench:fil(nB,month),allMetas:nM,
+      emailRows:emails.filter(r=>(r['Mês']||'').toLowerCase().trim()===mesNome.toLowerCase())
+    };
+    setLoading(92);
+    renderDashboard(main,globalData);
+    setLoading(100);
+    document.getElementById('lastUpdate').textContent=`Ao vivo · ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+    setTimeout(()=>setLoading(0),600);
+  }catch(e){
+    main.innerHTML=`<div class="loading-screen"><div style="color:var(--red);font-size:14px;font-weight:600;">Erro ao carregar dados</div><div style="margin-top:6px;font-size:12px;color:var(--text-faint);">${e.message}</div></div>`;
+    setLoading(0);console.error(e);
+  }
+}
+
+function refreshCharts(){if(globalData)renderDashboard(document.getElementById('mainContent'),globalData);}
+
+// RENDER
+function renderDashboard(container,data){
+  const{month,mesNome,anoNum,monthMetas,prevMetas,monthRegionais,emailRows,monthKpis,monthPilares,monthTemas,monthBench,allMetas}=data;
+  const label=mesNome.charAt(0).toUpperCase()+mesNome.slice(1)+' '+anoNum;
+  const cadRow=monthMetas.find(r=>r['Indicador']==='Usuários Cadastrados');
+  const atvRow=monthMetas.find(r=>r['Indicador']==='Usuários Ativos');
+  const prevCad=prevMetas.find(r=>r['Indicador']==='Usuários Cadastrados');
+  const prevAtv=prevMetas.find(r=>r['Indicador']==='Usuários Ativos');
+  const cadastMeta=pct(cadRow?.['Meta']),cadastReal=pct(cadRow?.['Realizado']);
+  const ativosMeta=pct(atvRow?.['Meta']),ativosReal=pct(atvRow?.['Realizado']);
+  const prevCadReal=pct(prevCad?.['Realizado']),prevAtvReal=pct(prevAtv?.['Realizado']);
+  const kpiMap={};monthKpis.forEach(r=>kpiMap[r['Indicador']]=r);
+  const uptime=pct(kpiMap['Uptime da plataforma']?.['Realizado']);
+  const totalTemas=monthTemas.length,temasAprov=monthTemas.filter(r=>r['Aprovado em Comitê']?.toLowerCase().includes('sim')).length;
+
+  const svg_dl=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>`;
+
+  container.innerHTML=`
+<section class="fade-up" style="animation-delay:.04s">
+  <div class="section-header">
+    <div><div class="section-label">Visão Geral</div><div class="section-title">Indicadores Principais</div></div>
+  </div>
+  <div class="kpi-grid">
+    ${kpiCard('Usuários Cadastrados',cadastReal,cadastMeta,prevCadReal,'kpi-cad')}
+    ${kpiCard('Usuários Ativos',ativosReal,ativosMeta,prevAtvReal,'kpi-atv')}
+    ${kpiCard('Temas de Comunicação',totalTemas,null,null,'kpi-temas',temasAprov+' aprovados em comitê')}
+    ${kpiCard('Uptime Plataforma',uptime,99,null,'kpi-uptime','Meta: 99%')}
+  </div>
+</section>
+
+<section class="fade-up" style="animation-delay:.07s">
+  <div class="section-header">
+    <div><div class="section-label">Performance</div><div class="section-title">Proposição de Metas Bora</div></div>
+    <button class="export-btn" onclick="exportCSV(globalData.monthMetas,'metas-bora')">${svg_dl} CSV</button>
+  </div>
+  <div class="metas-grid">
+    <div class="card"><div class="card-title">Usuários Cadastrados — Histórico</div><div id="cadRows"></div></div>
+    <div class="card"><div class="card-title">Usuários Ativos — Histórico</div><div id="atvRows"></div></div>
+  </div>
+  <div class="insight-box" id="metasInsight"></div>
+</section>
+
+<section class="fade-up" style="animation-delay:.1s">
+  <div class="section-header">
+    <div><div class="section-label">Cobertura</div><div class="section-title">Usuários Cadastrados × Não Cadastrados</div></div>
+    <div class="export-btns">
+      <button class="export-btn" onclick="exportChartPNG('regionaisChart','regionais')">${svg_dl} PNG</button>
+      <button class="export-btn" onclick="exportCSV(globalData.monthRegionais,'regionais')">${svg_dl} CSV</button>
+    </div>
+  </div>
+  <div class="chart-2col">
+    <div class="card"><div class="card-title">Por área/local — taxa de adesão</div><div class="chart-wrap" style="height:290px;"><canvas id="regionaisChart"></canvas></div></div>
+    <div class="regionais-side" id="regionaisSide"></div>
+  </div>
+</section>
+
+<section class="fade-up" style="animation-delay:.12s">
+  <div class="section-header"><div><div class="section-label">Mercado</div><div class="section-title">Comparativo do Mesmo Segmento</div></div></div>
+  <div class="metas-grid" id="benchSection"></div>
+  <div class="semaforo-grid">
+    <div class="sem-item sem-red"><div class="sem-dot sd-red"></div><div><div class="sem-label">Abaixo de 50%</div><div class="sem-desc">Intervenção imediata</div></div></div>
+    <div class="sem-item sem-amber"><div class="sem-dot sd-amber"></div><div><div class="sem-label">50% – 69%</div><div class="sem-desc">Satisfatório</div></div></div>
+    <div class="sem-item sem-green"><div class="sem-dot sd-green"></div><div><div class="sem-label">70% – 89%</div><div class="sem-desc">Muito bom</div></div></div>
+    <div class="sem-item sem-blue"><div class="sem-dot sd-blue"></div><div><div class="sem-label">Acima de 90%</div><div class="sem-desc">Nível de excelência</div></div></div>
+  </div>
+</section>
+
+<section class="fade-up" style="animation-delay:.14s">
+  <div class="section-header">
+    <div><div class="section-label">Estratégia</div><div class="section-title">Indicadores Executivos</div></div>
+    <button class="export-btn" onclick="exportCSV(globalData.monthKpis,'kpis')">${svg_dl} CSV</button>
+  </div>
+  <div class="card">
+    <table class="tbl"><thead><tr><th>Indicador</th><th>Meta</th><th>Realizado</th><th>Atingimento</th><th>Situacao</th></tr></thead>
+    <tbody id="kpiBody"></tbody></table>
+  </div>
+</section>
+
+<section class="fade-up" style="animation-delay:.16s">
+  <div class="section-header">
+    <div><div class="section-label">Conteúdo</div><div class="section-title">Distribuição por Pilar Estratégico</div></div>
+    <div class="export-btns">
+      <button class="export-btn" onclick="exportChartPNG('pilaresDonut','pilares')">${svg_dl} PNG</button>
+      <button class="export-btn" onclick="exportCSV(globalData.monthPilares,'pilares')">${svg_dl} CSV</button>
+    </div>
+  </div>
+  <div class="chart-2col">
+    <div class="card"><div class="card-title">Visualizações por pilar</div><div id="pilaresRows"></div></div>
+    <div class="card"><div class="card-title">Distribuição %</div><div class="chart-wrap" style="height:250px;"><canvas id="pilaresDonut"></canvas></div></div>
+  </div>
+</section>
+
+<section class="fade-up" style="animation-delay:.18s">
+  <div class="section-header">
+    <div><div class="section-label">Comunicação</div><div class="section-title">Volume de E-mails — ${anoNum-1} vs ${anoNum}</div></div>
+    <button class="export-btn" onclick="exportCSV(globalData.emailRows,'emails')">${svg_dl} CSV</button>
+  </div>
+  <div class="chart-2col">
+    <div class="card"><div class="card-title" id="emailLegend">Comparativo mensal</div><div id="emailRows" style="padding-top:4px;"></div></div>
+    <div style="display:flex;flex-direction:column;gap:11px;" id="emailKpis"></div>
+  </div>
+</section>
+
+<section class="fade-up" style="animation-delay:.2s">
+  <div class="section-header">
+    <div><div class="section-label">Planejamento</div><div class="section-title">Temas de Comunicação — ${label}</div></div>
+    <button class="export-btn" onclick="exportCSV(globalData.monthTemas,'temas')">${svg_dl} CSV</button>
+  </div>
+  <div id="temasTopCards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-bottom:16px;"></div>
+  <div class="card">
+    <div class="temas-filters" id="temasFilters"></div>
+    <div style="overflow-x:auto;">
+      <table class="tbl"><thead><tr><th>Tema</th><th>Público</th><th>Esforço</th><th>Agência</th><th>Valor</th><th>Comitê</th><th>Canais</th></tr></thead>
+      <tbody id="temasBody"></tbody></table>
+    </div>
+  </div>
+</section>`;
+
+  renderMetasHistorico(allMetas,month);
+  renderMetasInsight(cadastReal,cadastMeta,ativosReal,ativosMeta);
+  renderRegionais(monthRegionais);
+  renderBenchmarks(monthBench);
+  renderKpis(monthKpis);
+  renderPilares(monthPilares);
+  renderEmails(emailRows,anoNum,mesNome);
+  renderTemas(monthTemas);
+  // count-up for KPI values
+  setTimeout(()=>{
+    document.querySelectorAll('.kpi-cu').forEach(el=>{
+      const t=parseFloat(el.dataset.t),s=el.dataset.s||'',d=parseInt(el.dataset.d||0);
+      if(!isNaN(t))countUp(el,t,s,d);
+    });
+  },80);
+}
+
+// NARRATIVE
+function buildNarrative(cadastReal,cadastMeta,ativosReal,ativosMeta,regionais,pilares,anoNum){
+  const parts=[],badges=[];let title='Visao consolidada do periodo';
+  if(cadastReal!==null&&cadastMeta!==null){
+    const dc=cadastReal-cadastMeta,ok=dc>=0;
+    parts.push(`A taxa de <strong>usuarios cadastrados</strong> atingiu <strong>${fmtPct(cadastReal)}</strong> ${ok?'superando a':'ficando '+Math.abs(dc).toFixed(2)+'pp abaixo da'} meta de ${fmtPct(cadastMeta)}.`);
+    badges.push(`<span class="exec-badge ${ok?'eb-green':'eb-amber'}">Cadastrados: ${fmtPct(cadastReal)}</span>`);
+    title=ok?`Metas em dia — ${fmtPct(cadastReal)} de adesao em ${anoNum}`:`Atencao: adesao em ${fmtPct(cadastReal)}, meta e ${fmtPct(cadastMeta)}`;
+  }
+  if(ativosReal!==null&&ativosMeta!==null){
+    const da=ativosReal-ativosMeta,ok=da>=0;
+    parts.push(`Os <strong>usuarios ativos</strong> representam <strong>${fmtPct(ativosReal)}</strong> — ${ok?'acima da meta':'a '+Math.abs(da).toFixed(2)+'pp da meta'} de ${fmtPct(ativosMeta)}.`);
+    badges.push(`<span class="exec-badge ${ok?'eb-green':'eb-amber'}">Ativos: ${fmtPct(ativosReal)}</span>`);
+  }
+  const regs={};
+  regionais.forEach(r=>{const k=r['Área/Local']||'?';if(!regs[k])regs[k]={cad:0,ncad:0};const q=num(r['Quantidade'])||0;if((r['Status']||'').toLowerCase().includes('não'))regs[k].ncad=q;else regs[k].cad=q;});
+  const sortedRegs=Object.entries(regs).map(([k,v])=>({k,...v,taxa:v.cad+v.ncad>0?v.cad/(v.cad+v.ncad)*100:0})).filter(v=>v.cad+v.ncad>0).sort((a,b)=>b.taxa-a.taxa);
+  if(sortedRegs.length){parts.push(`A area com <strong>maior taxa de adesao</strong> e <strong>${sortedRegs[0].k}</strong> (${sortedRegs[0].taxa.toFixed(1)}%).`);badges.push(`<span class="exec-badge eb-blue">${sortedRegs.length} areas monitoradas</span>`);}
+  const pilarAlert=(pilares||[]).find(r=>r['Pilar']==='Honestidade'&&(num(r['Visualizações'])||0)===0);
+  if(pilarAlert)badges.push(`<span class="exec-badge eb-red">Pilar Honestidade sem conteudo</span>`);
+  return{title,text:parts.join(' ')||'Selecione um mes para visualizar o resumo executivo.',badges:badges.join('')};
+}
+
+// KPI CARD
+function kpiCard(label,real,target,prev,id,customMeta){
+  let color='var(--g300)',badge='',pctFill=0,momHtml='';
+  const isNum=real!==null&&target!==null;
+  if(isNum){
+    const ratio=real/target;
+    if(ratio>=1){color='var(--green)';badge=`<span class="kpi-badge" style="background:var(--greenl);color:var(--green);">META ATINGIDA</span>`;}
+    else if(ratio>=0.85){color='var(--amber)';badge=`<span class="kpi-badge" style="background:var(--amberl);color:var(--amber);">PRÓXIMO DA META</span>`;}
+    else{color='var(--red)';badge=`<span class="kpi-badge" style="background:var(--red-muted);color:var(--red);">ABAIXO DA META</span>`;}
+    pctFill=Math.min(ratio*100,100);
+  }
+  if(prev!==null&&real!==null){const mom=real-prev,cls=mom>0.1?'up':mom<-0.1?'down':'flat',ar=mom>0.1?'↑':mom<-0.1?'↓':'—';momHtml=`<span class="kpi-mom ${cls}">${ar} ${mom>=0?'+':''}${mom.toFixed(2)}pp</span>`;}
+  const dispVal=real!==null?fmtPct(real):'—';
+  const metaTxt=customMeta||(target!==null?'Meta: '+fmtPct(target):'');
+  return`<div class="kpi-card" id="${id}">
+    <div class="kpi-accent" style="background:${color};"></div>
+    <div class="kpi-label">${label}</div>
+    <div class="kpi-value-row">
+      <div class="kpi-value kpi-cu" data-t="${real!==null?real:0}" data-s="%" data-d="2">${dispVal}</div>
+      ${momHtml}
+    </div>
+    <div class="kpi-meta">${metaTxt}</div>
+    ${isNum?`<div class="kpi-bar"><div class="kpi-bar-fill" style="width:${pctFill}%;background:${color};transition:width 1.2s cubic-bezier(.4,0,.2,1);"></div></div>`:''}
+    ${badge}
+  </div>`;
+}
+
+// METAS HISTORICO
+function renderMetasHistorico(allMetas,currentMonth){
+  const months=MESES.slice(0,12).map(m=>`${m}/2026`).filter(m=>allMetas.some(r=>r._mes===m));
+  ['Usuários Cadastrados','Usuários Ativos'].forEach((ind,idx)=>{
+    const el=document.getElementById(idx===0?'cadRows':'atvRows');if(!el)return;
+    let html='';
+    months.forEach(m=>{
+      const row=allMetas.find(r=>r._mes===m&&r['Indicador']===ind);if(!row)return;
+      const metaV=pct(row['Meta']),realV=pct(row['Realizado']);
+      const mLbl=m.split('/')[0];const mCap=mLbl.charAt(0).toUpperCase()+mLbl.slice(1,3);
+      const isCur=m===currentMonth;
+      const delta=(metaV!==null&&realV!==null)?(realV-metaV):null;
+      const barColor=delta===null?'var(--g300)':delta>=0?'var(--green)':'var(--amber)';
+      const metaW=metaV!==null?Math.min(metaV,100):0,realW=realV!==null?Math.min(realV,100):0;
+      const ttHtml=`<strong>${mCap}</strong><br>Meta: ${metaV!==null?fmtPct(metaV):'—'}<br>Realizado: ${realV!==null?fmtPct(realV):'—'}<br>Variacao: ${delta!==null?(delta>=0?'+':'')+delta.toFixed(2)+'pp':'—'}`;
+      html+=`<div class="bullet-row" style="${isCur?'':'opacity:.6'}" onmouseenter="showTT(event,'${ttHtml}')" onmousemove="moveTT(event)" onmouseleave="hideTT()">
+        <div class="br-label" style="${isCur?'font-weight:700;color:var(--text)':''}">${mCap}${isCur?' ◀':''}</div>
+        <div class="br-track">
+          ${metaV!==null?`<div class="br-meta-fill" style="width:${metaW}%"></div>`:''}
+          ${realV!==null?`<div class="br-real-fill" style="width:${realW}%;background:${barColor};"></div>`:''}
+          ${metaV!==null?`<div class="br-meta-line" style="left:${metaW}%"></div>`:''}
+        </div>
+        <div class="br-value" style="color:${barColor}">${realV!==null?fmtPct(realV):'—'}</div>
+        <div class="br-delta ${delta!==null?(delta>=0?'delta-pos':'delta-neg'):''}">${delta!==null?(delta>=0?'+':'')+delta.toFixed(2)+'pp':'—'}</div>
+      </div>`;
+    });
+    el.innerHTML=html||'<div class="empty">Sem dados disponiveis</div>';
+  });
+}
+
+// METAS INSIGHT
+function renderMetasInsight(cadastReal,cadastMeta,ativosReal,ativosMeta){
+  const el=document.getElementById('metasInsight');if(!el)return;
+  let text='';
+  if(cadastReal!==null&&cadastMeta!==null){const dc=cadastReal-cadastMeta;text+=`<strong>Cadastrados:</strong> ${fmtPct(cadastReal)} vs. meta de ${fmtPct(cadastMeta)} (${dc>=0?'+':''}${dc.toFixed(2)}pp). &nbsp;|&nbsp; `;}
+  if(ativosReal!==null&&ativosMeta!==null){const da=ativosReal-ativosMeta;text+=`<strong>Ativos:</strong> ${fmtPct(ativosReal)} vs. meta de ${fmtPct(ativosMeta)} (${da>=0?'+':''}${da.toFixed(2)}pp).`;}
+  if(!text)text='Dados de metas ainda nao disponiveis para este mes.';
+  el.innerHTML=`<div class="insight-ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="insight-text">${text}</div>`;
+}
+
+// REGIONAIS — usa Área/Local, not Sigla
+function renderRegionais(regionais){
+  destroyChart('regionaisChart');
+  const side=document.getElementById('regionaisSide');
+  if(!regionais.length){side.innerHTML='<div class="side-card neutral"><div class="sc-desc">Sem dados regionais</div></div>';return;}
+  const regs={};
+  regionais.forEach(r=>{
+    const key=r['Área/Local']||r['Sigla']||'?';
+    if(!regs[key])regs[key]={name:key,cad:0,ncad:0};
+    const q=num(r['Quantidade'])||0;
+    if((r['Status']||'').toLowerCase().includes('não'))regs[key].ncad=q;
+    else regs[key].cad=q;
+  });
+  const sorted=Object.values(regs).map(v=>({...v,total:v.cad+v.ncad,taxa:v.cad+v.ncad>0?(v.cad/(v.cad+v.ncad))*100:0})).filter(r=>r.total>0).sort((a,b)=>a.taxa-b.taxa);
+  if(!sorted.length){if(document.getElementById('regionaisChart'))document.getElementById('regionaisChart').parentElement.innerHTML='<div class="empty">Quantidades nao preenchidas</div>';side.innerHTML='<div class="side-card neutral"><div class="sc-desc">Aguardando dados</div></div>';return;}
+  const dk=document.documentElement.getAttribute('data-theme')==='dark';
+  const gridC=dk?'rgba(255,255,255,.05)':'rgba(0,0,0,.04)',tickC=dk?'#8B949E':'#9CA3AF';
+  const ctx=document.getElementById('regionaisChart').getContext('2d');
+  charts['regionaisChart']=new Chart(ctx,{type:'bar',data:{
+    labels:sorted.map(r=>r.name),
+    datasets:[
+      {label:'Cadastrados',data:sorted.map(r=>r.cad),backgroundColor:dk?'rgba(255,255,255,.65)':'#1F2937',borderRadius:3,stack:'a'},
+      {label:'Não Cadastrados',data:sorted.map(r=>r.ncad),backgroundColor:'rgba(232,0,42,.33)',borderRadius:3,stack:'a'},
+      {label:'Taxa %',data:sorted.map(r=>r.taxa),type:'line',yAxisID:'y2',borderColor:'#1D4ED8',backgroundColor:'rgba(29,78,216,.07)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#1D4ED8',tension:0.35,fill:true}
+    ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{font:{size:10,family:'Plus Jakarta Sans'},color:tickC,boxWidth:10,padding:11}},
+      tooltip:{callbacks:{label:c=>c.dataset.label==='Taxa %'?` ${c.parsed.y.toFixed(1)}%`:` ${c.parsed.y.toLocaleString('pt-BR')}`}}},
+    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:9},color:tickC,maxRotation:38}},
+      y:{stacked:true,grid:{color:gridC},ticks:{font:{size:9},color:tickC}},
+      y2:{position:'right',grid:{display:false},max:100,ticks:{font:{size:9},color:'#1D4ED8',callback:v=>v+'%'}}}}});
+  const allSorted=[...sorted];
+  const worst=allSorted[0],best=allSorted[allSorted.length-1];
+  const bigN=[...allSorted].sort((a,b)=>b.ncad-a.ncad)[0];
+  side.innerHTML=`
+    <div class="side-card alert"><div class="sc-tag">Menor taxa de adesão</div><div class="sc-num">${worst.name}</div><div class="sc-desc">${worst.taxa.toFixed(1)}% — ${worst.ncad.toLocaleString('pt-BR')} não cadastrados</div></div>
+    <div class="side-card ok"><div class="sc-tag">Maior taxa de adesão</div><div class="sc-num">${best.name}</div><div class="sc-desc">${best.taxa.toFixed(1)}% — ${best.cad.toLocaleString('pt-BR')} cadastrados</div></div>
+    <div class="side-card neutral"><div class="sc-tag">Maior volume não cadastrado</div><div class="sc-num">${bigN.ncad.toLocaleString('pt-BR')}</div><div class="sc-desc">${bigN.name}</div></div>`;
+}
+
+// BENCHMARKS
+function renderBenchmarks(bench){
+  const el=document.getElementById('benchSection');
+  if(!bench.length){el.innerHTML='<div class="card"><div class="empty">Benchmarks nao disponiveis</div></div><div></div>';return;}
+  const rg=(metric,title)=>{
+    const rows=bench.filter(r=>r['Métrica']===metric);
+    if(!rows.length)return`<div class="card"><div class="card-title">${title}</div><div class="empty">Sem dados</div></div>`;
+    const cRow=rows.find(r=>r['Segmento']==='Claro'),cVal=pct(cRow?.['Valor']);
+    const maxV=Math.max(...rows.map(r=>pct(r['Valor'])||0),100);
+    const bars=rows.map(r=>{const v=pct(r['Valor']),isC=r['Segmento']==='Claro';const col=isC?(v>=70?'var(--green)':v>=50?'var(--amber)':'var(--red)'):'var(--g300)';
+      return`<div class="bench-row"><div class="bench-header"><span class="bench-name" style="${isC?'font-weight:700;color:var(--text)':''}">${r['Segmento']}${isC?' (Claro)':''}</span><span class="bench-val" style="color:${col}">${v!==null?fmtPct(v):'—'}</span></div>${v!==null?`<div class="bench-track"><div class="bench-fill" style="width:${(v/maxV)*100}%;background:${col};"></div></div>`:''}</div>`;}).join('');
+    const hl=cVal!==null?`<div style="margin-top:11px;padding:11px;border-radius:8px;background:${cVal>=70?'var(--greenl)':'var(--amberl)'}"><div style="font-family:var(--font-display);font-size:19px;font-weight:700;color:${cVal>=70?'var(--green)':'var(--amber)'};">${fmtPct(cVal)}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Claro ${cVal>=70?'acima do peer group':'abaixo do peer group'}</div></div>`:'';
+    return`<div class="card"><div class="card-title">${title}</div>${bars}${hl}</div>`;
+  };
+  el.innerHTML=rg('Cadastrados','Cadastrados na Plataforma')+rg('Ativos','Usuários Ativos');
+}
+
+// KPIs TABLE
+function renderKpis(kpis){
+  const tb=document.getElementById('kpiBody');
+  if(!kpis.length){tb.innerHTML='<tr><td colspan="5" class="empty">Sem KPIs</td></tr>';return;}
+  tb.innerHTML=kpis.map(r=>{
+    const atg=r['Atingimento_%'],atgV=pct(atg),rv=r['Realizado'],hasN=atgV!==null&&atg!=='#DIV/0!'&&atg!=='';
+    let chip,cc;
+    if(!rv||rv==='0'){chip='Em apuração';cc='chip-warn';}
+    else if(hasN&&atgV>=100){chip='Meta atingida';cc='chip-ok';}
+    else if(hasN&&atgV>=85){chip='Próximo';cc='chip-warn';}
+    else if(hasN){chip='Abaixo';cc='chip-alert';}
+    else{chip='Em construção';cc='chip-blue';}
+    return`<tr><td style="font-weight:600;color:var(--text);">${r['Indicador']}</td><td style="color:var(--text-faint);">${r['Meta']||'—'}</td><td>${rv||'—'}</td><td>${hasN?fmtPct(atgV):'—'}</td><td><span class="chip ${cc}">${chip}</span></td></tr>`;
+  }).join('');
+}
+
+// PILARES
+function renderPilares(pilares){
+  destroyChart('pilaresDonut');
+  const el=document.getElementById('pilaresRows');
+  const COLS={Pessoas:'#E8002A',Negócio:'#1D4ED8',Inovação:'#059669',Clientes:'#D97706',Sustentabilidade:'#7C3AED',Honestidade:'#EC4899'};
+  if(!pilares.length){el.innerHTML='<div class="empty">Sem dados de pilares</div>';return;}
+  const total=pilares.reduce((s,r)=>s+(num(r['Visualizações'])||0),0);
+  el.innerHTML=pilares.map(r=>{
+    const v=num(r['Visualizações'])||0,pctV=total>0?(v/total)*100:0,col=COLS[r['Pilar']]||'#9CA3AF',isA=r['Pilar']==='Honestidade'&&v===0;
+    return`<div class="pilar-bar-row"><div class="pb-label" style="${isA?'color:var(--red);':''}">${r['Pilar']}</div><div class="pb-track"><div class="pb-fill" style="width:${pctV}%;background:${isA?'var(--red)':col};opacity:.85;"></div></div><div class="pb-value">${v>0?v.toLocaleString('pt-BR'):(isA?'<span style="color:var(--red)">0</span>':'—')}</div><div class="pb-pct" style="${isA?'color:var(--red)':''}">${pctV>0?pctV.toFixed(0)+'%':'—'}</div></div>`;
+  }).join('');
+  const dk=document.documentElement.getAttribute('data-theme')==='dark';
+  const ctx=document.getElementById('pilaresDonut').getContext('2d');
+  charts['pilaresDonut']=new Chart(ctx,{type:'doughnut',data:{labels:pilares.map(r=>r['Pilar']),datasets:[{data:pilares.map(r=>num(r['Visualizações'])||0),backgroundColor:pilares.map(r=>COLS[r['Pilar']]||'#9CA3AF'),borderWidth:3,borderColor:dk?'#161B22':'#fff',hoverOffset:7}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{font:{size:10,family:'Plus Jakarta Sans'},color:dk?'#8B949E':'#374151',boxWidth:10,padding:9}},tooltip:{callbacks:{label:c=>` ${c.label}: ${total>0?((c.parsed/total)*100).toFixed(1):0}%`}}}}});
+}
+
+// EMAILS — usa Chart.js para comparativo limpo
+function renderEmails(emailRows,anoNum,mesNome){
+  destroyChart('emailChart');
+  const el=document.getElementById('emailRows'),kpis=document.getElementById('emailKpis'),legend=document.getElementById('emailLegend');
+  const e26=emailRows.find(r=>String(r['Ano'])===String(anoNum));
+  const e25=emailRows.find(r=>String(r['Ano'])===String(anoNum-1));
+  if(!e26&&!e25){el.innerHTML='<div class="empty">Dados de e-mail nao preenchidos</div>';kpis.innerHTML='';return;}
+  legend.textContent=`${mesNome.charAt(0).toUpperCase()+mesNome.slice(1)} — ${anoNum-1} vs ${anoNum}`;
+  const t26=num(e26?.['E-mail Totais'])||0,m26=num(e26?.['Massivos'])||0,s26=num(e26?.['Segmentados'])||0;
+  const t25=num(e25?.['E-mail Totais'])||0,m25=num(e25?.['Massivos'])||0,s25=num(e25?.['Segmentados'])||0;
+  const parcial=e26?.['Parcial']==='Sim';
+  const dk=document.documentElement.getAttribute('data-theme')==='dark';
+  const tickC=dk?'#8B949E':'#9CA3AF',gridC=dk?'rgba(255,255,255,.05)':'rgba(0,0,0,.04)';
+
+  // Replace email content area with a canvas
+  el.innerHTML=`
+    <div class="chart-wrap" style="height:180px;"><canvas id="emailChart"></canvas></div>
+    ${parcial?'<div style="margin-top:8px;font-size:11px;color:var(--amber);font-style:italic;">Dados parciais — mês ainda não encerrado</div>':''}`;
+
+  const ctx=document.getElementById('emailChart').getContext('2d');
+  charts['emailChart']=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:['Massivos','Segmentados','Total'],
+      datasets:[
+        {label:String(anoNum-1),data:[m25,s25,t25],backgroundColor:'rgba(156,163,175,0.5)',borderColor:'rgba(156,163,175,0.8)',borderWidth:1,borderRadius:4},
+        {label:String(anoNum),data:[m26,s26,t26],backgroundColor:'rgba(232,0,42,0.7)',borderColor:'rgba(232,0,42,0.9)',borderWidth:1,borderRadius:4}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:10,family:'Plus Jakarta Sans'},color:tickC,boxWidth:10,padding:12}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:10},color:tickC}},
+        y:{grid:{color:gridC},ticks:{font:{size:10},color:tickC,stepSize:5}}
+      }
+    }
+  });
+
+  const reducao=t25>0&&t26>0?Math.round((1-t26/t25)*100):null;
+  const shiftSeg=t26>0&&t25>0?Math.round((s26/t26-s25/t25)*100):null;
+  kpis.innerHTML=`
+    <div class="card" style="flex:1;"><div class="card-title">Redução vs ${anoNum-1}</div>
+      <div style="font-family:var(--font-display);font-size:32px;font-weight:700;color:${reducao!==null&&reducao>0?'var(--green)':'var(--text-faint)'};">${reducao!==null?'−'+reducao+'%':'—'}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">${t25} e-mails → ${t26} no mesmo período</div>
+    </div>
+    <div class="card" style="flex:1;"><div class="card-title">% Segmentados em ${anoNum}</div>
+      <div style="font-family:var(--font-display);font-size:32px;font-weight:700;color:var(--blue);">${t26>0?Math.round(s26/t26*100)+'%':'—'}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">dos e-mails em ${anoNum} são segmentados${shiftSeg!==null?` (${shiftSeg>=0?'+':''}${shiftSeg}pp vs ${anoNum-1})`:''}.</div>
+    </div>`;
+}
+
+// TEMAS — summary cards + tabela completa
+function renderTemas(temas){
+  const COLS={Pessoas:'#E8002A',Negócio:'#1D4ED8',Inovação:'#059669',Clientes:'#D97706',Cliente:'#D97706',Sustentabilidade:'#7C3AED',Honestidade:'#EC4899',inovação:'#059669',honestidade:'#EC4899'};
+  const CANAIS=['E-mail Segmen.','E-mail Massivo','Invite na agenda','TV','Mural','Indoor','Matéria Portal','Post Bora','Notificação Bora'];
+  const filters=document.getElementById('temasFilters'),tbody=document.getElementById('temasBody');
+  const topCards=document.getElementById('temasTopCards');
+  const pilares=[...new Set(temas.map(r=>r['Público']).filter(Boolean))].sort();
+
+  // summary numbers
+  const total=temas.length;
+  const aprovados=temas.filter(r=>(r['Aprovado em Comitê']||'').toLowerCase().includes('sim')).length;
+  const pendentes=total-aprovados;
+  const agMap={};
+  temas.forEach(r=>{const a=(r['Agência']||'').trim();if(a)agMap[a]=(agMap[a]||0)+1;});
+  const agencias=Object.entries(agMap).sort((a,b)=>b[1]-a[1]);
+
+  if(topCards){
+    topCards.innerHTML=`
+    <div class="card" style="border-top:3px solid var(--green);">
+      <div class="card-title">Aprovação em Comitê</div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
+        <span style="font-family:var(--font-display);font-size:34px;font-weight:700;color:var(--green);">${aprovados}</span>
+        <span style="font-size:13px;color:var(--text-faint);">de ${total}</span>
+      </div>
+      <div style="height:5px;background:var(--g100);border-radius:3px;overflow:hidden;margin-bottom:8px;">
+        <div style="width:${total>0?Math.round(aprovados/total*100):0}%;height:100%;background:var(--green);border-radius:3px;"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text-faint);">${pendentes} pendentes / não aprovados</div>
+    </div>
+    <div class="card" style="border-top:3px solid var(--blue);">
+      <div class="card-title">Agências Envolvidas</div>
+      <div style="font-family:var(--font-display);font-size:34px;font-weight:700;color:var(--blue);margin-bottom:8px;">${agencias.length||'—'}</div>
+      ${agencias.slice(0,4).map(([a,n])=>`<div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-size:11px;color:var(--text-muted);font-weight:500;">${a}</span><span style="font-size:11px;font-weight:700;color:var(--text);">${n} tema${n>1?'s':''}</span></div>`).join('')}
+      ${!agencias.length?'<div class="empty" style="padding:8px 0;">Sem dados</div>':''}
+    </div>
+    <div class="card" style="border-top:3px solid var(--red);">
+      <div class="card-title">Distribuição por Público</div>
+      ${pilares.slice(0,5).map(p=>{
+        const cnt=temas.filter(r=>r['Público']===p).length;
+        const pct=total>0?Math.round(cnt/total*100):0;
+        return`<div style="margin-bottom:7px;"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="font-size:11px;font-weight:600;color:var(--text-muted);">${p}</span><span style="font-size:11px;font-weight:700;color:var(--text);">${cnt}</span></div><div style="height:4px;background:var(--g100);border-radius:2px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${COLS[p]||'#9CA3AF'};border-radius:2px;"></div></div></div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  const renderTable=data=>{
+    if(!data.length){tbody.innerHTML='<tr><td colspan="7" class="empty">Sem temas</td></tr>';return;}
+    tbody.innerHTML=data.map(r=>{
+      const ap=(r['Aprovado em Comitê']||'').toLowerCase(),isAprov=ap.includes('sim');
+      const col=COLS[r['Público']]||'#9CA3AF';
+      const canais=CANAIS.filter(c=>r[c]&&r[c]!=='0'&&r[c]!=='').length;
+      const agencia=(r['Agência']||'').trim();
+      const valor=(r['Valor']||'').trim();
+      return`<tr style="${!isAprov&&ap?'opacity:.55;':''}">
+        <td style="font-weight:600;color:var(--text);">${r['Tema']||''}</td>
+        <td><span class="pilar-dot" style="background:${col}"></span><span style="font-size:11px;">${r['Público']||'—'}</span></td>
+        <td style="font-size:11px;">${r['Esforço']||'—'}</td>
+        <td style="font-size:11px;color:var(--text-muted);">${agencia||'—'}</td>
+        <td>${valor?`<span style="font-size:11px;font-weight:600;color:var(--text);">${valor}</span>`:'<span style="color:var(--text-faint);">—</span>'}</td>
+        <td>${isAprov?'<span class="chip chip-ok">Sim</span>':(ap.includes('não')||ap.includes('nao'))?'<span class="chip chip-neutral">Não</span>':'<span class="chip chip-warn">Pendente</span>'}</td>
+        <td><span style="font-family:var(--font-display);font-weight:700;font-size:13px;">${canais}</span></td>
+      </tr>`;
+    }).join('');
+  };
+
+  filters.innerHTML=`<span class="filter-chip active" data-pilar="all">Todos (${temas.length})</span>`+
+    pilares.map(p=>`<span class="filter-chip" data-pilar="${p}"><span class="pilar-dot" style="background:${COLS[p]||'#9CA3AF'}"></span>${p} (${temas.filter(r=>r['Público']===p).length})</span>`).join('');
+  renderTable(temas);
+  filters.addEventListener('click',e=>{
+    const chip=e.target.closest('.filter-chip');if(!chip)return;
+    const pil=chip.dataset.pilar;
+    filters.querySelectorAll('.filter-chip').forEach(c=>c.classList.toggle('active',c.dataset.pilar===pil));
+    renderTable(pil==='all'?temas:temas.filter(r=>r['Público']===pil));
+  });
+}
+
+window.addEventListener('load',()=>{document.getElementById('monthSelect').value='abril/2026';loadMonth('abril/2026');});
+</script>
+</body>
+</html>
